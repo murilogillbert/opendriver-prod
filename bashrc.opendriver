@@ -1,0 +1,13 @@
+# Open Driver production helpers
+export OPEN_DRIVER_PROD_DIR="${OPEN_DRIVER_PROD_DIR:-/root/opendriver-prod}"
+export OPEN_DRIVER_APP_DIR="${OPEN_DRIVER_APP_DIR:-/root/opendriver}"
+
+alias od-prod='cd "$OPEN_DRIVER_PROD_DIR"'
+alias od-app='cd "$OPEN_DRIVER_APP_DIR"'
+alias od-update='cd "$OPEN_DRIVER_PROD_DIR" && bash update.sh'
+alias od-ps='cd "$OPEN_DRIVER_PROD_DIR" && docker compose --env-file .env ps'
+alias od-logs-api='docker logs -f opendriver-api'
+alias od-logs-web='docker logs -f opendriver-web'
+alias od-logs-sql='docker logs -f opendriver-sqlserver'
+alias od-logs-nginx='docker logs -f opendriver-nginx'
+alias od-migrate='cd "$OPEN_DRIVER_PROD_DIR" && bash sql/run-migrations.sh'
