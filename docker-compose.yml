@@ -34,6 +34,8 @@ services:
         condition: service_healthy
     expose:
       - "3001"
+    volumes:
+      - api-uploads:/app/uploads
     restart: unless-stopped
 
   web:
@@ -61,3 +63,4 @@ services:
 
 volumes:
   sqlserver-data:
+  api-uploads:
