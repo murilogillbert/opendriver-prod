@@ -74,8 +74,9 @@ O comando faz:
 1. `git pull` do projeto Open Driver
 2. build dos containers
 3. sobe SQL Server, API, Web e Nginx
-4. executa migrations SQL pendentes
-5. mostra o status dos containers
+4. reinicia o Nginx para renovar a resolucao dos containers internos
+5. executa migrations SQL pendentes
+6. mostra o status dos containers
 
 ## Banco
 

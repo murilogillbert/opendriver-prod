@@ -25,6 +25,7 @@ echo "Commit: $(git log -1 --pretty='%h %s')"
 
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" build
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" up -d
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" restart nginx
 
 bash "$SCRIPT_DIR/sql/run-migrations.sh"
 
