@@ -30,6 +30,9 @@ Edite pelo menos:
 - `SQLSERVER_PASSWORD`
 - `JWT_SECRET`
 - `CORS_ORIGIN`
+- `MERCADO_PAGO_ACCESS_TOKEN`
+- `MERCADO_PAGO_PUBLIC_KEY`
+- `MERCADO_PAGO_WEBHOOK_SECRET`
 - `GIT_USER_NAME`
 - `GIT_USER_EMAIL`
 
@@ -71,7 +74,7 @@ O comando faz:
 1. `git pull` do projeto Open Driver
 2. build dos containers
 3. sobe SQL Server, API, Web e Nginx
-4. executa migrations SQL pendentes/idempotentes
+4. executa migrations SQL pendentes
 5. mostra o status dos containers
 
 ## Banco
@@ -82,7 +85,17 @@ As migrations ficam no projeto principal:
 /root/opendriver/sql/migrations
 ```
 
-O runner executa todos os arquivos `.sql`. Cada migration deve ser idempotente e registrar sua execucao em `dbo.schema_migrations`.
+O runner consulta `dbo.schema_migrations` e pula arquivos ja aplicados. Cada migration deve ser idempotente e registrar sua execucao em `dbo.schema_migrations`.
+
+## Mercado Pago
+
+Configure o webhook no painel do Mercado Pago apontando para:
+
+```text
+https://opendriver.com.br/api/webhooks/mercado-pago?secret=VALOR_DE_MERCADO_PAGO_WEBHOOK_SECRET
+```
+
+O webhook registra eventos em `payment_events`, reconcilia pedidos e libera beneficios quando o pagamento e aprovado.
 
 ## Comandos uteis
 
