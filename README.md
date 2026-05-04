@@ -88,6 +88,10 @@ As migrations ficam no projeto principal:
 
 O runner consulta `dbo.schema_migrations` e pula arquivos ja aplicados. Cada migration deve ser idempotente e registrar sua execucao em `dbo.schema_migrations`.
 
+## Uploads
+
+Arquivos enviados pelo admin sao salvos no volume `api-uploads` e expostos em `/uploads/...` pelo Nginx, apontando para a API. O limite de upload no Nginx acompanha o limite padrao da API: `200m`.
+
 ## Mercado Pago
 
 Configure o webhook no painel do Mercado Pago apontando para:
