@@ -11,3 +11,6 @@ alias od-logs-web='docker logs -f opendriver-web'
 alias od-logs-sql='docker logs -f opendriver-sqlserver'
 alias od-logs-nginx='docker logs -f opendriver-nginx'
 alias od-migrate='cd "$OPEN_DRIVER_PROD_DIR" && bash sql/run-migrations.sh'
+
+# Generate a strong secret for JWT_SECRET / ADMIN_BOOTSTRAP_TOKEN. Pipe to clipboard or paste into .env.
+alias od-gen-secret='openssl rand -base64 48 | tr -d "\n"; echo'
