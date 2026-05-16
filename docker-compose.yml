@@ -1,7 +1,7 @@
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: opendriver-sqlserver
+    container_name: opendriverhub-sqlserver
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -24,41 +24,51 @@ services:
 
   api:
     build:
-      context: ${OPEN_DRIVER_APP_DIR}
-      dockerfile: apps/api/Dockerfile
-    container_name: opendriver-api
+      context: ${HUB_APP_DIR}
+      dockerfile: backend/Dockerfile
+    container_name: opendriverhub-api
     env_file:
       - .env
+    environment:
+      # Connection string montada aqui (compose interpola ${...} a partir do .env).
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=${SQLSERVER_DATABASE:-OpenDriverHub};User Id=sa;Password=${SQLSERVER_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+      ASPNETCORE_URLS: "http://+:8080"
     depends_on:
       sqlserver:
         condition: service_healthy
     expose:
-      - "3001"
+      - "8080"
     volumes:
       - api-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     restart: unless-stopped
 
   web:
     build:
-      context: ${OPEN_DRIVER_APP_DIR}
-      dockerfile: apps/web/Dockerfile
+      context: ${HUB_APP_DIR}
+      dockerfile: web.Dockerfile
       args:
-        VITE_API_BASE_URL: ${PUBLIC_API_BASE_URL}
-    container_name: opendriver-web
+        VITE_API_BASE_URL: ${PUBLIC_API_BASE_URL:-/api/v1}
+    container_name: opendriverhub-web
     expose:
       - "8080"
     restart: unless-stopped
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: opendriver-nginx
+    container_name: opendriverhub-nginx
     depends_on:
       - api
       - web
     ports:
       - "127.0.0.1:80:80"
     volumes:
-      - ./nginx/opendriver.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/hub.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
 
 volumes:

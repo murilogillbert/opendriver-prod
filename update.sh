@@ -13,22 +13,31 @@ set -a
 source "$ENV_FILE"
 set +a
 
-APP_DIR="${OPEN_DRIVER_APP_DIR:-/root/opendriver}"
+APP_DIR="${HUB_APP_DIR:-/root/hub}"
 
 echo ""
-echo "Open Driver - update / redeploy"
+echo "OpenDriverHub - update / redeploy"
 echo ""
 
 cd "$APP_DIR"
-git pull --rebase origin main
+git pull --rebase origin "${GIT_DEFAULT_BRANCH:-main}"
 echo "Commit: $(git log -1 --pretty='%h %s')"
 
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" build
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" up -d
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" restart nginx
 
-bash "$SCRIPT_DIR/sql/run-migrations.sh"
+# As migrations do banco são aplicadas automaticamente pela API (EF Core
+# code-first) durante o boot — não há passo SQL manual.
+echo "Aguardando a API ficar saudável (EF aplica as migrations no boot)..."
+for i in $(seq 1 40); do
+  if curl -fsS http://localhost/health >/dev/null 2>&1; then
+    echo "API OK."
+    break
+  fi
+  sleep 3
+done
 
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" ps
 echo ""
-echo "Open Driver updated."
+echo "OpenDriverHub updated."

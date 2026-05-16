@@ -20,14 +20,14 @@ set -a
 source "$ENV_FILE"
 set +a
 
-APP_DIR="${OPEN_DRIVER_APP_DIR:-/root/opendriver}"
-REPO_URL="${OPEN_DRIVER_REPO_URL:?OPEN_DRIVER_REPO_URL is required}"
-GIT_NAME="${GIT_USER_NAME:-Open Driver Deploy}"
-GIT_EMAIL="${GIT_USER_EMAIL:-deploy@opendriver.com.br}"
+APP_DIR="${HUB_APP_DIR:-/root/hub}"
+REPO_URL="${HUB_REPO_URL:?HUB_REPO_URL is required}"
+GIT_NAME="${GIT_USER_NAME:-OpenDriverHub Deploy}"
+GIT_EMAIL="${GIT_USER_EMAIL:-deploy@seudominio.com.br}"
 GIT_BRANCH="${GIT_DEFAULT_BRANCH:-main}"
 
 echo ""
-echo "Open Driver - Ubuntu bootstrap"
+echo "OpenDriverHub - Ubuntu bootstrap"
 echo ""
 
 apt-get update -qq
@@ -64,7 +64,7 @@ ufw allow 22/tcp >/dev/null
 ufw --force enable >/dev/null
 systemctl enable --now fail2ban >/dev/null
 
-if ! grep -q "Open Driver production helpers" /root/.bashrc; then
+if ! grep -q "OpenDriverHub production helpers" /root/.bashrc; then
   {
     echo ""
     cat "$SCRIPT_DIR/bashrc.opendriver"

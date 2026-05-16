@@ -1,126 +1,118 @@
-# Open Driver - Producao
+# OpenDriverHub - Produção
 
-Infraestrutura de producao do Open Driver, seguindo o mesmo formato operacional do `exsinov-prod`.
+Infraestrutura de produção do **OpenDriverHub** (deploy do repositório `hub`).
 
 ## Stack
 
 - Docker Compose
 - SQL Server 2022
-- API Node.js/TypeScript
-- Web React/Vite
-- Nginx
-- Cloudflare Tunnel para `opendriver.com.br`
+- API **.NET 10** (ASP.NET Core, EF Core code-first)
+- Web **React/Vite** (servido por Nginx)
+- Nginx (reverse proxy)
+- Cloudflare Tunnel (já configurado no servidor)
+
+> Diferente da versão anterior (Node): **não há passo de migração SQL manual**.
+> A API aplica as migrations do EF Core automaticamente no boot.
 
 ## Primeiro setup no Ubuntu
 
 ```bash
-apt-get update
-apt-get install -y git ca-certificates
+apt-get update && apt-get install -y git ca-certificates
 cd /root
-git clone https://github.com/murilogillbert/opendriver-prod.git
+git clone <URL_DO_REPO_opendriver-prod> opendriver-prod
 cd opendriver-prod
 cp .env.example .env
 nano .env
 bash bootstrap-ubuntu.sh
 ```
 
-Edite pelo menos:
+Edite no `.env` pelo menos:
 
-- `OPEN_DRIVER_REPO_URL`
+- `HUB_REPO_URL` (repositório do `hub`)
 - `SQLSERVER_PASSWORD`
-- `JWT_SECRET`
-- `CORS_ORIGIN`
-- `MERCADO_PAGO_ACCESS_TOKEN`
-- `MERCADO_PAGO_PUBLIC_KEY`
-- `MERCADO_PAGO_WEBHOOK_SECRET`
-- `GIT_USER_NAME`
-- `GIT_USER_EMAIL`
+- `Jwt__Secret` (use `odh-gen-secret`)
+- `Cors__Origins` e `HUB_DOMAIN`
+- `Seed__Enabled=false` (mantenha falso em produção)
 
-O bootstrap faz:
+O `bootstrap-ubuntu.sh`:
 
-1. instala Git, Docker, UFW, Fail2ban, cloudflared e utilitarios
+1. instala Git, Docker, UFW, Fail2ban, cloudflared e utilitários
 2. configura Git global
-3. adiciona aliases Open Driver no `/root/.bashrc`
-4. clona ou atualiza `/root/opendriver`
+3. adiciona aliases `odh-*` no `/root/.bashrc`
+4. clona/atualiza `/root/hub`
 5. executa `update.sh`
 
-## Configurar Cloudflare
+> **Cloudflare já está configurado neste servidor** — não rode novamente o
+> `cloudflare-tunnel-init.sh` nem altere o túnel.
 
-Pre-requisito: o dominio `opendriver.com.br` precisa estar adicionado na sua conta Cloudflare e usando os nameservers da Cloudflare.
-
-Depois do bootstrap:
-
-```bash
-cd /root/opendriver-prod
-bash cloudflare-tunnel-init.sh
-```
-
-O script:
-
-1. roda `cloudflared tunnel login` se ainda nao houver login
-2. cria ou reaproveita o tunnel `opendriver`
-3. gera `/root/.cloudflared/config.yml`
-4. cria rotas DNS para `opendriver.com.br` e `www.opendriver.com.br`
-5. instala/reinicia o servico `cloudflared`
-
-## Atualizar tudo depois do deploy inicial
+## Atualizar / redeploy
 
 ```bash
 cd /root/opendriver-prod && bash update.sh
+# ou, com os aliases:
+odh-update
 ```
 
-O comando faz:
+`update.sh`:
 
-1. `git pull` do projeto Open Driver
-2. build dos containers
-3. sobe SQL Server, API, Web e Nginx
-4. reinicia o Nginx para renovar a resolucao dos containers internos
-5. executa migrations SQL pendentes
+1. `git pull` do `hub`
+2. `docker compose build` (imagens API .NET + Web Vite)
+3. `up -d` — a **API aplica as migrations do EF Core no boot**
+4. reinicia o Nginx
+5. aguarda `GET /health` ficar OK
 6. mostra o status dos containers
 
-## Banco
+## Banco de dados
 
-As migrations ficam no projeto principal:
+Migrations são **code-first (EF Core)** e ficam no próprio app
+(`hub/backend/src/OpenDriverHub.Infrastructure/Migrations`). São aplicadas
+automaticamente quando o container `opendriverhub-api` sobe. Não há scripts
+`.sql` nem `schema_migrations` neste repositório.
+
+O **seed de dados demo** (contas `*@demo.com`) só roda se `Seed__Enabled=true`.
+Em produção isso fica **desligado** — apenas a estrutura é criada.
+
+## Credenciais de integração (WhatsApp / Mercado Pago / Gmail)
+
+Não precisam ficar no `.env`. São **editáveis em runtime** em
+**Admin → Integrações** (o valor salvo no banco sobrepõe o `.env`).
+Opcionalmente é possível pré-popular os defaults no `.env`
+(`MercadoPago__AccessToken`, etc.).
+
+### Webhook Mercado Pago
+
+Configure no painel do Mercado Pago apontando para:
 
 ```text
-/root/opendriver/sql/migrations
+https://SEU_DOMINIO/api/v1/payments/webhook/mercadopago
 ```
 
-O runner consulta `dbo.schema_migrations` e pula arquivos ja aplicados. Cada migration deve ser idempotente e registrar sua execucao em `dbo.schema_migrations`.
+A verificação é por **assinatura HMAC no header** (`x-signature`), com o
+segredo definido em Admin → Integrações (`MercadoPago:WebhookSecret`).
+Não se usa `?secret=` na URL.
 
 ## Uploads
 
-Arquivos enviados pelo admin sao salvos no volume `api-uploads` e expostos em `/uploads/...` pelo Nginx, apontando para a API. O limite de upload no Nginx acompanha o limite padrao da API: `200m`.
+Imagens enviadas pelo parceiro/admin ficam no volume `api-uploads`
+(`/app/uploads` no container) e são expostas em `/uploads/...` pelo Nginx.
+Limite no Nginx: `12m` (acompanha `Storage__MaxImageBytes`, 5 MB).
 
-## Mercado Pago
-
-Configure o webhook no painel do Mercado Pago apontando para:
-
-```text
-https://opendriver.com.br/api/webhooks/mercado-pago?secret=VALOR_DE_MERCADO_PAGO_WEBHOOK_SECRET
-```
-
-O webhook registra eventos em `payment_events`, reconcilia pedidos e libera beneficios quando o pagamento e aprovado.
-
-## Comandos uteis
+## Comandos úteis
 
 ```bash
-od-update
-od-ps
-docker logs -f opendriver-api
-docker logs -f opendriver-sqlserver
-bash sql/run-migrations.sh
-systemctl status cloudflared
-journalctl -u cloudflared -f
+odh-update
+odh-ps
+docker logs -f opendriverhub-api
+docker logs -f opendriverhub-sqlserver
+curl -I http://localhost
+curl -fsS http://localhost/health
 ```
 
-## Checklist rapido
+## Checklist rápido
 
 ```bash
 docker --version
 docker compose version
-git config --global --list
 docker ps
-curl -I http://localhost
-curl -I https://opendriver.com.br
+curl -fsS http://localhost/health
 ```

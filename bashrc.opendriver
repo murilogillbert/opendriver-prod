@@ -1,16 +1,15 @@
-# Open Driver production helpers
-export OPEN_DRIVER_PROD_DIR="${OPEN_DRIVER_PROD_DIR:-/root/opendriver-prod}"
-export OPEN_DRIVER_APP_DIR="${OPEN_DRIVER_APP_DIR:-/root/opendriver}"
+# OpenDriverHub production helpers
+export HUB_PROD_DIR="${HUB_PROD_DIR:-/root/opendriver-prod}"
+export HUB_APP_DIR="${HUB_APP_DIR:-/root/hub}"
 
-alias od-prod='cd "$OPEN_DRIVER_PROD_DIR"'
-alias od-app='cd "$OPEN_DRIVER_APP_DIR"'
-alias od-update='cd "$OPEN_DRIVER_PROD_DIR" && bash update.sh'
-alias od-ps='cd "$OPEN_DRIVER_PROD_DIR" && docker compose --env-file .env ps'
-alias od-logs-api='docker logs -f opendriver-api'
-alias od-logs-web='docker logs -f opendriver-web'
-alias od-logs-sql='docker logs -f opendriver-sqlserver'
-alias od-logs-nginx='docker logs -f opendriver-nginx'
-alias od-migrate='cd "$OPEN_DRIVER_PROD_DIR" && bash sql/run-migrations.sh'
+alias odh-prod='cd "$HUB_PROD_DIR"'
+alias odh-app='cd "$HUB_APP_DIR"'
+alias odh-update='cd "$HUB_PROD_DIR" && bash update.sh'
+alias odh-ps='cd "$HUB_PROD_DIR" && docker compose --env-file .env ps'
+alias odh-logs-api='docker logs -f opendriverhub-api'
+alias odh-logs-web='docker logs -f opendriverhub-web'
+alias odh-logs-sql='docker logs -f opendriverhub-sqlserver'
+alias odh-logs-nginx='docker logs -f opendriverhub-nginx'
 
-# Generate a strong secret for JWT_SECRET / ADMIN_BOOTSTRAP_TOKEN. Pipe to clipboard or paste into .env.
-alias od-gen-secret='openssl rand -base64 48 | tr -d "\n"; echo'
+# Gera um segredo forte para Jwt__Secret. Cole no .env.
+alias odh-gen-secret='openssl rand -base64 48 | tr -d "\n"; echo'
