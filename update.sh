@@ -23,7 +23,16 @@ cd "$APP_DIR"
 git pull --rebase origin "${GIT_DEFAULT_BRANCH:-main}"
 echo "Commit: $(git log -1 --pretty='%h %s')"
 
-docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" build
+export COMPOSE_PARALLEL_LIMIT=1
+
+echo ""
+echo "Build API image..."
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" build --progress=plain api
+
+echo ""
+echo "Build Web image..."
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" build --progress=plain web
+
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" up -d
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" restart nginx
 
